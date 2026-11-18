@@ -7,6 +7,9 @@
  * - A spiral galaxy is pinned behind the portrait in the hero. It assembles
  *   from a turbulent swirl when the page opens, parts around the cursor,
  *   ripples on click, and unravels again as the hero scrolls away
+ * - At the end of the page the same journey plays backwards: as the contact
+ *   section scrolls in, the galaxy gathers from a faint swirl and settles
+ *   behind the contact form
  * - Light mode re-inks everything for a pale background
  * - Pauses when the tab is hidden; lowers resolution / density if the
  *   frame rate drops
@@ -26,12 +29,13 @@ const CAMERA_TRAVEL = 26; // world units travelled from top to bottom of the pag
 const GALAXY_DISTANCE = 10; // distance of the galaxy in front of the camera
 const GALAXY_FILL = 0.84; // galaxy radius relative to the anchor box
 const INTRO_SECONDS = 3.2;
+const END_OPACITY = 0.9; // the returning galaxy sits behind the form and text, so it is a touch dimmer
 
 const damp = (current, target, lambda, dt) => current + (target - current) * (1 - Math.exp(-lambda * dt));
 const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
-export function createExperience({ canvas, anchor, hero, reducedMotion = false, theme = 'dark' }) {
+export function createExperience({ canvas, anchor, hero, ending, reducedMotion = false, theme = 'dark' }) {
   const quality = detectQuality();
 
   /* ---------- Renderer, scene, camera ---------- */
@@ -121,6 +125,7 @@ export function createExperience({ canvas, anchor, hero, reducedMotion = false, 
   let scrollMax = 1;
   let heroHeight = 1;
   const anchorBox = { x: 0, y: 0, size: 0 }; // document coordinates (centre + size)
+  const endBox = { x: 0, y: 0, size: 0, top: Infinity }; // the contact section, where the galaxy returns
 
   const measureAnchor = () => {
     if (!anchor) return;
@@ -129,6 +134,17 @@ export function createExperience({ canvas, anchor, hero, reducedMotion = false, 
     anchorBox.y = r.top + r.height / 2 + window.scrollY;
     anchorBox.size = Math.min(r.width, r.height);
     heroHeight = Math.max(1, hero ? hero.offsetHeight : height);
+
+    if (ending) {
+      // The returning galaxy settles behind the contact form, the way it
+      // started out behind the portrait: its glow shows through the frosted glass.
+      const section = ending.getBoundingClientRect();
+      const form = (ending.querySelector('.contact-form') ?? ending).getBoundingClientRect();
+      endBox.x = form.left + form.width / 2 + window.scrollX;
+      endBox.y = form.top + form.height / 2 + window.scrollY;
+      endBox.size = Math.min(form.width, form.height, height * 0.8);
+      endBox.top = section.top + window.scrollY;
+    }
   };
 
   const measure = () => {
@@ -169,31 +185,7 @@ export function createExperience({ canvas, anchor, hero, reducedMotion = false, 
   };
 
   const placeGalaxy = (now) => {
-    // 0 at the top → 1 once the visitor has scrolled a little past the hero.
-    // The galaxy stays put while the portrait scrolls away, revealing its core,
-    // then drifts to the centre, unravels into a swirl and fades.
-    const leave = clamp01(window.scrollY / (heroHeight * 1.15));
-    const visible = leave < 1 && anchorBox.size > 0;
-    galaxy.root.visible = visible;
-    if (!visible) return;
-
-    // On stacked (phone/tablet) layouts the hero text sits below the portrait,
-    // so there the galaxy simply travels with the portrait instead.
-    const stacked = width <= 900;
-    const out = reducedMotion ? 0 : leave;
-    const centre = stacked ? 0 : smoothstep(0.05, 0.75, out);
-    const screenX = anchorBox.x + (width / 2 - anchorBox.x) * centre;
-    const screenY = reducedMotion || stacked
-      ? anchorBox.y - window.scrollY
-      : anchorBox.y + (height * 0.5 - anchorBox.y) * centre - window.scrollY * 0.12;
-
-    const halfH = GALAXY_DISTANCE * tanHalfFov;
-    const halfW = halfH * camera.aspect;
-    const ndcX = (screenX / width) * 2 - 1;
-    const ndcY = -((screenY / height) * 2 - 1);
-    const baseScale = (anchorBox.size / height) * 2 * halfH * GALAXY_FILL;
-
-    // Intro: the swirl settles into a spiral
+    // Intro: the swirl settles into a spiral once the page has loaded
     let introT = 1;
     if (!intro.done) {
       introT = intro.start === null ? 0 : clamp01((now - intro.start) / (INTRO_SECONDS * 1000));
@@ -201,18 +193,58 @@ export function createExperience({ canvas, anchor, hero, reducedMotion = false, 
     }
     const settle = easeOutCubic(introT);
 
-    const unravel = smoothstep(0.22, 0.85, out);
-    const chaos = Math.max(1 - settle, unravel * 0.9);
-    const fade = reducedMotion ? leave : smoothstep(0.42, 0.92, leave);
-    const opacity = Math.min(settle * 1.15, 1) * (1 - fade);
+    const halfH = GALAXY_DISTANCE * tanHalfFov;
+    const halfW = halfH * camera.aspect;
+    const pointScale = THREE.MathUtils.clamp(anchorBox.size / 560, 0.62, 1.3);
+    const stacked = width <= 900; // phone / tablet: hero text sits below the portrait
 
-    galaxy.root.position.set(ndcX * halfW, ndcY * halfH, -GALAXY_DISTANCE);
-    galaxy.root.scale.setScalar(baseScale * (0.82 + 0.18 * settle) * (1 + centre * 0.3 + unravel * 0.25));
-    galaxy.setState({
-      chaos,
-      opacity,
-      pointScale: THREE.MathUtils.clamp(anchorBox.size / 560, 0.62, 1.3),
-    });
+    // Hero phase: 0 at the top → 1 a little past the hero. The galaxy stays put
+    // while the portrait scrolls away, revealing its core, then drifts to the
+    // centre, unravels into a swirl and fades.
+    const leave = clamp01(window.scrollY / (heroHeight * 1.15));
+
+    // Ending phase: the same journey played backwards as the contact section
+    // scrolls in. 0 while it is below the screen → 1 once it fills the view.
+    const enter = ending ? clamp01((height - (endBox.top - window.scrollY)) / (height * 0.85)) : 0;
+
+    let screenX;
+    let screenY;
+    let scale;
+    let chaos;
+    let opacity;
+
+    if (leave < 1 && anchorBox.size > 0) {
+      const out = reducedMotion ? 0 : leave;
+      const centre = stacked ? 0 : smoothstep(0.05, 0.75, out);
+      screenX = anchorBox.x + (width / 2 - anchorBox.x) * centre;
+      screenY = reducedMotion || stacked
+        ? anchorBox.y - window.scrollY
+        : anchorBox.y + (height * 0.5 - anchorBox.y) * centre - window.scrollY * 0.12;
+      const unravel = smoothstep(0.22, 0.85, out);
+      const fade = reducedMotion ? leave : smoothstep(0.42, 0.92, leave);
+      chaos = Math.max(1 - settle, unravel * 0.9);
+      opacity = Math.min(settle * 1.15, 1) * (1 - fade);
+      scale = ((anchorBox.size / height) * 2 * halfH * GALAXY_FILL) *
+        (0.82 + 0.18 * settle) * (1 + centre * 0.3 + unravel * 0.25);
+    } else if (enter > 0 && endBox.size > 0) {
+      const e = reducedMotion ? 1 : smoothstep(0, 1, enter);
+      const spread = 1 - e; // 1 = scattered swirl in the middle of the screen, 0 = formed spiral
+      const targetY = endBox.y - window.scrollY;
+      screenX = width / 2 + (endBox.x - width / 2) * e;
+      screenY = height * 0.5 + (targetY - height * 0.5) * e;
+      chaos = Math.max(1 - settle, smoothstep(0.15, 1, spread) * 0.9);
+      opacity = Math.min(settle * 1.15, 1) * smoothstep(0.05, 0.6, reducedMotion ? enter : e) * END_OPACITY;
+      scale = ((endBox.size / height) * 2 * halfH * GALAXY_FILL) *
+        (0.82 + 0.18 * settle) * (1 + spread * 0.55);
+    } else {
+      galaxy.root.visible = false;
+      return;
+    }
+
+    galaxy.root.visible = true;
+    galaxy.root.position.set(((screenX / width) * 2 - 1) * halfW, -((screenY / height) * 2 - 1) * halfH, -GALAXY_DISTANCE);
+    galaxy.root.scale.setScalar(scale);
+    galaxy.setState({ chaos, opacity, pointScale });
   };
 
   /* ---------- Adaptive quality ---------- */

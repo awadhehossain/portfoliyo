@@ -89,6 +89,7 @@ async function startExperience() {
       canvas: $('#webgl'),
       anchor: $('#hero-visual'),
       hero: $('#home'),
+      ending: $('#contact'),
       reducedMotion: prefersReducedMotion(),
       theme: getTheme(),
     });

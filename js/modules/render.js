@@ -212,7 +212,10 @@ export function renderTimeline(entries) {
         <article class="timeline__card glass spotlight" data-reveal>
           <p class="timeline__period">${esc(e.period)}${e.current ? '<span class="timeline__now">Now</span>' : ''}</p>
           <h3 class="timeline__title">${esc(e.title)}</h3>
-          ${e.institution ? `<p class="timeline__institution">${esc(e.institution)}</p>` : ''}
+          ${e.institution ? `<p class="timeline__institution">${icon('cap')}<span>${esc(e.institution)}</span></p>` : ''}
+          ${e.facts?.length ? `<dl class="timeline__facts">${e.facts
+            .map((f) => `<div class="timeline__fact${f.highlight ? ' timeline__fact--hi' : ''}"><dt>${esc(f.label)}</dt><dd>${esc(f.value)}</dd></div>`)
+            .join('')}</dl>` : ''}
           <p class="timeline__desc">${esc(e.description)}</p>
           ${e.tags?.length ? `<ul class="chips reveal-chips" aria-label="Topics">${e.tags.map((t, ci) => `<li class="chip" style="--ci:${ci}">${esc(t)}</li>`).join('')}</ul>` : ''}
         </article>

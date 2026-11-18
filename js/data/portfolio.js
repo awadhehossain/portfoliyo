@@ -326,34 +326,48 @@ export const projects = [
 
 /* ---------------------------------------------------------------- */
 /*  Education timeline (oldest first — the line fills as you scroll) */
-/*  TODO: add your institutions and years.                           */
-/*  Empty `institution` values are simply not shown.                 */
+/*  `facts` are shown as small labelled pills; `highlight: true`     */
+/*  makes one stand out (used for results).                          */
 /* ---------------------------------------------------------------- */
 export const education = [
   {
     period: 'Secondary',
     title: 'Secondary School Certificate (SSC)',
-    institution: '',
+    institution: 'Buzruk Srikundi M.A. Hamid High School',
     description:
       'Where my interest in computers, mathematics and figuring out how things work began.',
+    facts: [
+      { label: 'Subject', value: 'Science' },
+      { label: 'Batch', value: '2020' },
+      { label: 'GPA', value: '5.00 / 5.00', highlight: true },
+    ],
     tags: ['Mathematics', 'Science'],
   },
   {
     period: 'Higher secondary',
     title: 'Higher Secondary Certificate (HSC)',
-    institution: '',
+    institution: 'Dhaka Residential Model College',
     description:
       'Built the foundation in mathematics and physics that led me to study computer science.',
+    facts: [
+      { label: 'Subject', value: 'Science' },
+      { label: 'Batch', value: '2022' },
+      { label: 'GPA', value: '5.00 / 5.00', highlight: true },
+    ],
     tags: ['Mathematics', 'Physics'],
   },
   {
-    period: 'Undergraduate, present',
+    period: 'Undergraduate',
     title: 'B.Sc. in Computer Science & Engineering',
-    institution: '',
+    institution: 'United International University',
     description:
-      'Studying algorithms, data structures, object-oriented programming, computer ' +
-      'architecture and software engineering.',
-    tags: ['Algorithms', 'Data structures', 'OOP', 'Systems'],
+      'Majoring in AI & Data Science, alongside algorithms, data structures, object-oriented ' +
+      'programming, computer architecture and software engineering.',
+    facts: [
+      { label: 'Major', value: 'AI & Data Science' },
+      { label: 'CGPA', value: '3.63 / 4.00', highlight: true },
+    ],
+    tags: ['Machine learning', 'Algorithms', 'Data structures', 'OOP'],
     current: true,
   },
   {
