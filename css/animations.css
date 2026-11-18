@@ -1,0 +1,222 @@
+/* ==========================================================================
+   animations.css — keyframes, hero intro sequence, scroll reveals,
+   reduced-motion overrides
+   ========================================================================== */
+
+/* ---------- Keyframes ---------- */
+@keyframes loader-breathe {
+  0%, 100% { opacity: 0.65; transform: scale(0.96); }
+  50%      { opacity: 1;    transform: scale(1.04); }
+}
+
+@keyframes caret-blink {
+  50% { opacity: 0; }
+}
+
+@keyframes scroll-line {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(350%); }
+}
+
+@keyframes nn-pulse {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50%      { opacity: 1;   transform: scale(1.35); }
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fab-pulse {
+  0%   { transform: scale(1);   opacity: 0.85; }
+  70%  { transform: scale(1.7); opacity: 0; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+
+@keyframes badge-float {
+  0%, 100% { transform: translateZ(46px) translateY(0); }
+  50%      { transform: translateZ(46px) translateY(-8px); }
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- Hero intro (runs once, when the loader finishes) ---------- */
+.js .hero__hello,
+.js .hero__roles,
+.js .hero__intro,
+.js .hero__typed,
+.js .hero__cta,
+.js .hero__social {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out);
+}
+
+.js .hero__name .char {
+  opacity: 0;
+  transform: translateY(0.45em) rotateX(-70deg);
+  filter: blur(8px);
+  transition:
+    opacity 0.9s var(--ease-out),
+    transform 1s var(--ease-out),
+    filter 0.9s var(--ease-out),
+    color 0.3s,
+    text-shadow 0.3s;
+  transition-delay: calc(var(--ci, 0) * 38ms + 150ms);
+}
+
+.is-loaded .hero__hello,
+.is-loaded .hero__roles,
+.is-loaded .hero__intro,
+.is-loaded .hero__typed,
+.is-loaded .hero__cta,
+.is-loaded .hero__social {
+  opacity: 1;
+  transform: none;
+}
+
+.is-loaded .hero__hello  { transition-delay: 0.05s; }
+.is-loaded .hero__roles  { transition-delay: 0.75s; }
+.is-loaded .hero__intro  { transition-delay: 0.9s; }
+.is-loaded .hero__typed  { transition-delay: 1.05s; }
+.is-loaded .hero__cta    { transition-delay: 1.2s; }
+.is-loaded .hero__social { transition-delay: 1.35s; }
+
+.is-loaded .hero__name .char {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* Portrait rises in while the galaxy assembles behind it */
+.js .portrait {
+  opacity: 0;
+  transform: translateY(26px) scale(0.95);
+  transition: opacity 1.1s var(--ease-out) 0.3s, transform 1.3s var(--ease-out) 0.3s;
+}
+.is-loaded .portrait {
+  opacity: 1;
+  transform: none;
+}
+
+/* Once the intro is over, hovering a letter should respond instantly */
+.intro-done .hero__name .char {
+  transition-delay: 0s;
+}
+
+/* ---------- Scroll-triggered reveals ---------- */
+.js [data-reveal] {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.9s var(--ease-out),
+    transform 0.9s var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 90ms);
+}
+
+.js [data-reveal='mask'] {
+  opacity: 1;
+  transform: translateY(0.35em);
+  clip-path: inset(0 0 100% 0);
+  transition:
+    clip-path 1.1s var(--ease-out),
+    transform 1.1s var(--ease-out);
+}
+
+.js [data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.js [data-reveal='mask'].is-visible {
+  clip-path: inset(-0.1em -0.1em -0.2em -0.1em);
+}
+
+/* Tilt cards set their own transform; reveal them with opacity + translate on a wrapper-free basis */
+.js [data-reveal][data-tilt].is-visible {
+  transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+}
+
+/* After the entrance, interactive cards respond without the stagger delay */
+.js [data-reveal].reveal-done {
+  transition-delay: 0s;
+}
+.js [data-tilt].reveal-done {
+  transition:
+    transform 0.5s var(--ease-out),
+    border-color var(--dur-med),
+    box-shadow var(--dur-med);
+}
+
+/* Chips inside a revealed card pop in one after another */
+.js .reveal-chips .chip {
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+  transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 90ms + var(--ci, 0) * 55ms + 250ms);
+}
+.js .is-visible .reveal-chips .chip,
+.js .is-visible.reveal-chips .chip {
+  opacity: 1;
+  transform: none;
+}
+
+/* Projects re-rendered by a filter */
+.project-card.is-entering {
+  animation: card-in 0.6s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+/* Fallback: if scripts fail, never leave content hidden */
+.app-failed [data-reveal],
+.app-failed .hero__hello,
+.app-failed .hero__roles,
+.app-failed .hero__intro,
+.app-failed .hero__typed,
+.app-failed .hero__cta,
+.app-failed .portrait,
+.app-failed .hero__social {
+  opacity: 1 !important;
+  transform: none !important;
+  clip-path: none !important;
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+
+  .js [data-reveal],
+  .js [data-reveal='mask'],
+  .js .reveal-chips .chip,
+  .js .portrait,
+  .js .hero__name .char {
+    opacity: 1;
+    transform: none;
+    clip-path: none;
+    filter: none;
+  }
+
+  .hero__caret {
+    animation: none;
+  }
+}
